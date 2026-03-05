@@ -1,151 +1,222 @@
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcrypt");
-const path = require("path");
 
 const app = express();
 const db = new sqlite3.Database("./users.db");
 
-// Middleware
 app.use(express.json());
 app.use(express.static("public"));
 
-// Create users table if it doesn't exist
+/* ---------------- DATABASE ---------------- */
+
 db.run(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT
-  )
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE,
+  password TEXT,
+  role TEXT DEFAULT 'user'
+)
 `);
 
-// admin user
-const defaultAdmin = { username: "admin", password: "admin123" };
+// Add role column to existing tables if it doesn't exist
+db.run(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'`, (err) => {
+  if (err && !err.message.includes('duplicate column name')) {
+    console.log('Role column already exists or error:', err.message);
+  }
+});
+
+db.run(`
+CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT,
+  content TEXT,
+  author TEXT
+)
+`);
+
+/* ---------------- DEFAULT ADMIN ---------------- */
+
+const defaultAdmin = {
+  username: "Nullchan",
+  password: "4@H_7d4''1",
+  role: "admin",
+};
 
 db.get(
-  "SELECT * FROM users WHERE username = ?",
+  "SELECT * FROM users WHERE username=?",
   [defaultAdmin.username],
   async (err, user) => {
-    if (err) return console.error(err.message);
+    if (err) {
+      console.error(err);
+      return;
+    }
+
     if (!user) {
       const hash = await bcrypt.hash(defaultAdmin.password, 10);
+
       db.run(
-        "INSERT INTO users (username, password) VALUES (?, ?)",
-        [defaultAdmin.username, hash],
+        "INSERT INTO users (username,password,role) VALUES (?,?,?)",
+        [defaultAdmin.username, hash, defaultAdmin.role],
         (err) => {
-          if (err) console.error("Failed to create default admin:", err.message);
-          else console.log("Default admin created: admin / admin123");
+          if (err) console.error(err);
+          else console.log("Default admin created: Nullchan");
+        }
+      );
+    } else {
+      // Force admin role if user already exists
+      db.run(
+        "UPDATE users SET role='admin' WHERE username=?",
+        [defaultAdmin.username],
+        (err) => {
+          if (err) console.error(err);
         }
       );
     }
   }
 );
 
+/* ---------------- SIGNUP ---------------- */
 
-/*
-
- _____ _____ _____  _   _ _   _______ 
-/  ___|_   _|  __ \| \ | | | | | ___ \
-\ `--.  | | | |  \/|  \| | | | | |_/ /
- `--. \ | | | | __ | . ` | | | |  __/ 
-/\__/ /_| |_| |_\ \| |\  | |_| | |    
-\____/ \___/ \____/\_| \_/\___/\_|    
-                                      
-                                      
-
-*/
 app.post("/signup", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password)
-    return res.json({ success: false, error: "Missing username or password" });
+  if (!username || !password) {
+    return res.json({ success: false, error: "Missing fields" });
+  }
 
   try {
     const hash = await bcrypt.hash(password, 10);
 
     db.run(
-      "INSERT INTO users (username, password) VALUES (?, ?)",
+      "INSERT INTO users (username,password) VALUES (?,?)",
       [username, hash],
-      function (err) {
-        if (err)
-          return res.json({ success: false, error: "User already exists" });
+      (err) => {
+        if (err) {
+          return res.json({ success: false, error: "User exists" });
+        }
+
         res.json({ success: true });
-      },
+      }
     );
   } catch (err) {
     console.error(err);
-    res.json({ success: false, error: "Server error" });
+    res.json({ success: false });
   }
 });
 
-/*
-
- _     _____ _____ _____ _   _ 
-| |   |  _  |  __ \_   _| \ | |
-| |   | | | | |  \/ | | |  \| |
-| |   | | | | | __  | | | . ` |
-| |___\ \_/ / |_\ \_| |_| |\  |
-\_____/\___/ \____/\___/\_| \_/
-                               
-                               
-
-*/
+/* ---------------- LOGIN ---------------- */
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password)
-    return res.json({ success: false, error: "Missing username or password" });
-
   db.get(
-    "SELECT * FROM users WHERE username = ?",
+    "SELECT * FROM users WHERE username=?",
     [username],
     async (err, user) => {
       if (err) {
-        console.error(err.message);
-        return res.json({ success: false, error: "Server error" });
+        console.error(err);
+        return res.json({ success: false });
       }
 
-      if (!user)
-        return res.json({ success: false, error: "Invalid credentials" });
+      if (!user) {
+        return res.json({ success: false, error: "User not found" });
+      }
 
       const match = await bcrypt.compare(password, user.password);
-      if (match) {
-        res.json({ success: true, username: user.username });
-      } else {
-        res.json({ success: false, error: "Invalid credentials" });
+
+      if (!match) {
+        return res.json({ success: false, error: "Wrong password" });
       }
-    },
+
+      // send username + role to frontend
+      res.json({
+        success: true,
+        username: user.username,
+        role: user.role,
+      });
+    }
   );
 });
 
-/*
+/* ---------------- CREATE POST ---------------- */
 
-                                                                                                                              
-                                                                                                                              
-                                                                                                                              
-                                                                                                                              
-                                                                                                                              
-                                                                                                                              
-                                                                                                                              
-                                                                                                                              
- _____  _____ _____   _   _ _____ ___________  ______ ___________  ______  ___   _____ _   _ ______  _____  ___  ____________ 
-|  __ \|  ___|_   _| | | | /  ___|  ___| ___ \ |  ___|  _  | ___ \ |  _  \/ _ \ /  ___| | | || ___ \|  _  |/ _ \ | ___ \  _  \
-| |  \/| |__   | |   | | | \ `--.| |__ | |_/ / | |_  | | | | |_/ / | | | / /_\ \\ `--.| |_| || |_/ /| | | / /_\ \| |_/ / | | |
-| | __ |  __|  | |   | | | |`--. \  __||    /  |  _| | | | |    /  | | | |  _  | `--. \  _  || ___ \| | | |  _  ||    /| | | |
-| |_\ \| |___  | |   | |_| /\__/ / |___| |\ \  | |   \ \_/ / |\ \  | |/ /| | | |/\__/ / | | || |_/ /\ \_/ / | | || |\ \| |/ / 
- \____/\____/  \_/    \___/\____/\____/\_| \_| \_|    \___/\_| \_| |___/ \_| |_/\____/\_| |_/\____/  \___/\_| |_/\_| \_|___/  
-                                                                                                                              
-                                                                                                                              
+app.post("/create-post", (req, res) => {
+  const { title, content, author } = req.body;
 
-*/
-app.get("/user/:username", (req, res) => {
-  const username = req.params.username;
-  db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
-    if (err || !user) return res.json({ success: false });
-    res.json({ success: true, username: user.username });
+  if (!title || !content || !author) {
+    return res.json({ success: false });
+  }
+
+  db.run(
+    "INSERT INTO posts (title,content,author) VALUES (?,?,?)",
+    [title, content, author],
+    function (err) {
+      if (err) {
+        console.error(err);
+        return res.json({ success: false });
+      }
+
+      res.json({ success: true });
+    }
+  );
+});
+
+/* ---------------- GET POSTS ---------------- */
+
+app.get("/posts", (req, res) => {
+  db.all("SELECT * FROM posts ORDER BY id DESC", [], (err, rows) => {
+    if (err) {
+      console.error(err);
+      return res.json({ success: false });
+    }
+
+    res.json({
+      success: true,
+      posts: rows,
+    });
   });
 });
 
-// Start server
-app.listen(3000, () => console.log("Server running at http://localhost:3000"));
+/* ---------------- DELETE POST ---------------- */
+
+app.delete("/delete-post/:id", (req, res) => {
+  const id = req.params.id;
+  const { username } = req.body;
+
+  if (!username) {
+    return res.json({ success: false });
+  }
+
+  db.get("SELECT role FROM users WHERE username=?", [username], (err, user) => {
+    if (err || !user) {
+      return res.json({ success: false });
+    }
+
+    db.get("SELECT author FROM posts WHERE id=?", [id], (err, post) => {
+      if (err || !post) {
+        return res.json({ success: false });
+      }
+
+      // allow admin OR author
+      if (user.role !== "admin" && post.author !== username) {
+        return res.json({ success: false, error: "Not authorized" });
+      }
+
+      db.run("DELETE FROM posts WHERE id=?", [id], function (err) {
+        if (err) {
+          console.error(err);
+          return res.json({ success: false });
+        }
+
+        res.json({ success: true });
+      });
+    });
+  });
+});
+
+/* ---------------- START SERVER ---------------- */
+
+app.listen(3000, () => {
+  console.log("Server running at http://localhost:3000");
+});

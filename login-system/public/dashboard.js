@@ -1,5 +1,5 @@
-// ================= LOGIN =================
 const username = localStorage.getItem("username");
+const role = localStorage.getItem("role")?.toLowerCase().trim();
 
 if (!username) {
   window.location.href = "./index.html";
@@ -7,110 +7,112 @@ if (!username) {
 
 document.getElementById("dashboard-welcome").textContent =
   `Welcome, ${username}!`;
+
 document.getElementById("menu-welcome").textContent = username;
 
-// ================= LOGOUT =================
+/* -------- LOGOUT -------- */
+
 function logout() {
-  localStorage.removeItem("username");
+  localStorage.clear();
   window.location.href = "./index.html";
 }
 
-// ================= POSTS =================
-let localPosts = JSON.parse(localStorage.getItem("posts") || "[]");
-let apiPosts = [];
+/* -------- LOAD POSTS -------- */
 
-// combined render function
-function renderPosts() {
+async function loadPosts() {
+  const res = await fetch("/posts");
+  const data = await res.json();
+
+  if (!data.success) return;
+
   const container = document.getElementById("posts-container");
+
   container.innerHTML = "";
 
-  // first render local posts (user-created)
-  localPosts.forEach((post) => {
+  data.posts.forEach((post) => {
     const div = document.createElement("div");
     div.className = "post-card";
+
+    let deleteBtn = "";
+
+    if (role === "admin" || post.author === username) {
+      deleteBtn = `<button onclick="deletePost(${post.id})">Delete</button>`;
+    }
+
     div.innerHTML = `
       <h3>${post.title}</h3>
       <p>${post.content}</p>
-      <small>Posted by: <strong>${post.user}</strong></small>
+      <small>Posted by <b>${post.author}</b></small>
+      ${deleteBtn}
     `;
-    container.appendChild(div);
-  });
 
-  // then render API posts
-  apiPosts.forEach((post) => {
-    const div = document.createElement("div");
-    div.className = "post-card";
-    div.innerHTML = `
-      <h3>${post.title}</h3>
-      <p>${post.body}</p>
-      <small>Posted by User ${post.userId}</small>
-    `;
     container.appendChild(div);
   });
 }
 
-// ================= MODAL CONTROL =================
+/* -------- CREATE POST -------- */
+
+async function submitPost() {
+  const title = document.getElementById("post-title").value;
+  const content = document.getElementById("post-content").value;
+
+  if (!title || !content) {
+    alert("Write something");
+    return;
+  }
+
+  await fetch("/create-post", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      author: username,
+    }),
+  });
+
+  document.getElementById("post-title").value = "";
+  document.getElementById("post-content").value = "";
+
+  closePostModal();
+  loadPosts();
+}
+
+/* -------- DELETE -------- */
+
+async function deletePost(id) {
+  const res = await fetch(`/delete-post/${id}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username }),
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert("Not authorized");
+    return;
+  }
+
+  loadPosts();
+}
+
+/* -------- MODAL -------- */
+
 const modal = document.getElementById("post-modal");
 
 function openPostModal() {
   modal.style.display = "flex";
-  closeMenu(); // close side menu when opening
 }
 
 function closePostModal() {
   modal.style.display = "none";
 }
 
-// ================= SUBMIT POST =================
-function submitPost() {
-  const title = document.getElementById("post-title").value.trim();
-  const content = document.getElementById("post-content").value.trim();
+/* -------- INIT -------- */
 
-  if (!title || !content) {
-    alert("Please enter a title and content");
-    return;
-  }
-
-  // add to local posts
-  localPosts.unshift({ title, content, user: username });
-  localStorage.setItem("posts", JSON.stringify(localPosts));
-
-  document.getElementById("post-title").value = "";
-  document.getElementById("post-content").value = "";
-
-  closePostModal();
-  renderPosts();
-}
-
-// ================= BURGER MENU =================
-const burger = document.getElementById("burger");
-const sideMenu = document.getElementById("sideMenu");
-const overlay = document.getElementById("menuOverlay");
-
-burger.addEventListener("click", () => {
-  sideMenu.classList.toggle("active");
-  overlay.classList.toggle("active");
-});
-
-overlay.addEventListener("click", closeMenu);
-
-function closeMenu() {
-  sideMenu.classList.remove("active");
-  overlay.classList.remove("active");
-}
-
-// ================= FETCH API POSTS =================
-async function loadApiPosts() {
-  try {
-    const response = await fetch("https://jsonplaceholder.typicode.com/posts");
-    const data = await response.json();
-    apiPosts = data.slice(0, 50); // first 50 posts
-    renderPosts(); // render after fetching
-  } catch (err) {
-    console.error("Failed to fetch API posts:", err);
-  }
-}
-
-// ================= INITIALIZE =================
-renderPosts();
-loadApiPosts();
+loadPosts();

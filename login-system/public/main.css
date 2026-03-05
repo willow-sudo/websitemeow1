@@ -40,12 +40,23 @@ html, body {
   z-index: 100;
 }
 
+.navbar button {
+  background: #760303;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 20px;
+  padding: 8px 16px;
+  border: none;
+  transition: background 0.2s ease;
+}
+
 /* Logo */
 .logo {
   background: url("./img/web-programming.png") no-repeat center;
   width: 40px;
   height: 40px;
   background-size: contain;
+  background-color: aqua;
 }
 
 /* Burger Menu */
@@ -65,23 +76,7 @@ html, body {
   border-radius: 2px;
 }
 
-/* Side Menu */
-.side-menu {
-  position: fixed;
-  top: 0;
-  right: -260px;
-  width: 250px;
-  height: 100%;
-  background: #1a1a1b;
-  border-left: 1px solid #2a2a2c;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  transition: right 0.3s ease;
-  overflow-y: auto; /* scroll only if content exceeds height */
-  z-index: 1001;
-}
+
 
 .side-menu.active {
   right: 0;
