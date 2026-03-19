@@ -1,4 +1,4 @@
-## 🚀 How to run this project
+## How to run this project
 
 ### 1. Install Node.js
 
