@@ -12,11 +12,13 @@ Check it works:
 
 ```bash
 node -v
+
 2. Download the project
 
 Option A (ZIP):
 
-Click the green Code button on GitHub
+you know how to download from github :3
+(if not here https://youtu.be/_TqeRqgFIAE?si=jfK5AoVET0ceGMbu)
 
 Press Download ZIP
 
