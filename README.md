@@ -18,7 +18,7 @@ node -v
 Option A (ZIP):
 
 you know how to download from github :3
-(if not here https://youtu.be/_TqeRqgFIAE?si=jfK5AoVET0ceGMbu)
+(if not here https://www.youtube.com/watch?v=_TqeRqgFIAE )
 
 Press Download ZIP
 
