@@ -5,6 +5,7 @@ if (!username) window.location.href = "./index.html";
 
 document.getElementById("dashboard-welcome").textContent =
   `Welcome, ${username}!`;
+  
 
 const modal = document.getElementById("post-modal");
 
