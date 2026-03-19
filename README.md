@@ -24,14 +24,19 @@ Press Download ZIP
 
 Extract it
 
+
 Option B (Git):
 
 git clone https://github.com/willow-sudo/websitemeow1.git
 cd websitemeow1
+
+
 3. Install dependencies
 npm install
+
 4. Start the server
 node server.js
+
 5. Open the website
 
 Go to:
