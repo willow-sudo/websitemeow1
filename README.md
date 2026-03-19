@@ -27,7 +27,7 @@ Extract it
 
 Option B (Git):
 
-git clone https://github.com/willow-sudo/websitemeow1.git
+git clone https://github.com/willow-sudo/websitemeow1
 cd websitemeow1
 
 ---
