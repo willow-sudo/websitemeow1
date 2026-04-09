@@ -313,6 +313,76 @@ body {
   background: #ff5c5c;
 }
 
+
+
+
+/* ======= COMMENTS ======= */
+.comment-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+/* form */
+.comment-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2a2a2c;
+  background: #0f0f10;
+  color: #eee;
+  font-size: 13px;
+}
+
+.comment-input:focus {
+  outline: none;
+  border: 1px solid #ff3b3b;
+}
+
+/* comment button */
+.comment-form button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #ff6f61;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+.comment-form button:hover {
+  background: #ff5c5c;
+}
+
+/* comments list */
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* single comment */
+.comment {
+  background: #151515;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  border-left: 3px solid #ff6f61;
+  word-wrap: break-word;
+}
+
+/* username in comment */
+.comment b {
+  color: #ff6f61;
+}
+
 /* ======= Overlay ======= */
 .menu-overlay {
   position: fixed;

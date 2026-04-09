@@ -6,6 +6,15 @@ if (!username) window.location.href = "./index.html";
 document.getElementById("dashboard-welcome").textContent =
   `Welcome, ${username}!`;
 
+// ===== MAKE LINKS CLICKABLE =====
+function makeLinksClickable(text) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  return text.replace(urlRegex, (url) => {
+    return `<a href="${url}" target="_blank">${url}</a>`;
+  });
+}
+
 // ===== MODAL =====
 const modal = document.getElementById("post-modal");
 
@@ -36,7 +45,7 @@ function enableScrollZoom(img) {
   });
 }
 
-// ===== ANTI-SPAM TRACKERS =====
+// ===== ANTI-SPAM =====
 const likeCooldown = {};
 const commentCooldown = {};
 
@@ -62,7 +71,6 @@ async function loadPosts() {
       ? `<img src="${post.image}" class="post-image">`
       : "";
 
-    // Comment form
     const commentSection = `
       <div class="comment-section">
         <form class="comment-form" data-post-id="${post.id}">
@@ -76,7 +84,7 @@ async function loadPosts() {
     div.innerHTML = `
       <small>Posted by <b>${post.author}</b></small>
       <h3>${post.title}</h3>
-      <p>${post.content}</p>
+      <p>${makeLinksClickable(post.content)}</p>
       ${imageHTML}
       <button onclick="likePost(${post.id})">❤ ${post.likes || 0}</button>
       ${deleteBtn}
@@ -128,8 +136,10 @@ document
 async function likePost(postId) {
   const key = `${username}-${postId}`;
   const now = Date.now();
-  if (likeCooldown[key] && now - likeCooldown[key] < 5000000000000000000000000000000000000000000000000000)
+
+  if (likeCooldown[key] && now - likeCooldown[key] < 1)
     return alert("Wait before liking again!");
+
   likeCooldown[key] = now;
 
   const res = await fetch(`/like-post/${postId}`, { method: "POST" });
@@ -152,8 +162,10 @@ document.addEventListener("submit", async (e) => {
 
   const key = `${username}-${postId}`;
   const now = Date.now();
-  if (commentCooldown[key] && now - commentCooldown[key] < 10000)
+
+  if (commentCooldown[key] && now - commentCooldown[key] < 5000)
     return alert("Wait a few seconds before commenting again!");
+
   commentCooldown[key] = now;
 
   const submitBtn = form.querySelector("button");
@@ -164,6 +176,7 @@ document.addEventListener("submit", async (e) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, comment: commentText }),
   });
+
   const data = await res.json();
   if (!data.success) alert("Failed to post comment");
 
@@ -197,6 +210,7 @@ async function deletePost(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username }),
   });
+
   const data = await res.json();
   if (!data.success) return alert("Not authorized");
 
