@@ -43,3 +43,9 @@ node server.js
 Go to:
 
 http://localhost:3000
+
+
+```
+
+This is my linktree if you want to suport mee :3 
+https://linktr.ee/Nullchan404 
